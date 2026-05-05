@@ -3,7 +3,7 @@ description: >-
   Error monitoring SDK for Flutter — Pionne. Auto-captures Flutter framework
   errors and unhandled async errors, ships rich runtime context (Dart version,
   OS, device, locale).
-version: 0.1.1
+version: 0.1.2
 homepage: https://pionne.agkgcreations.fr
 repository: https://github.com/agkgcreations/pionne-sdk-flutter
 issue_tracker: https://github.com/agkgcreations/pionne-sdk-flutter/issues

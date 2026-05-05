@@ -1,3 +1,9 @@
+## 0.1.2
+
+- README: add a "Get your token" section pointing to the Pionne mobile app
+  (no public web dashboard). Helps developers find where to generate their
+  `pio_live_…` token.
+
 ## 0.1.1
 
 - Fix: undefined `ErrorCallback` type → use `bool Function(Object, StackTrace)`.
