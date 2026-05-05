@@ -1,3 +1,9 @@
+## 0.1.1
+
+- Fix: undefined `ErrorCallback` type → use `bool Function(Object, StackTrace)`.
+- Fix: prefix `dart:async` import to call `runZonedGuarded` without recursion.
+- Add explicit `dart:ui` import for `PlatformDispatcher`.
+
 ## 0.1.0
 
 - Initial release.

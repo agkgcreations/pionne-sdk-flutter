@@ -1,6 +1,7 @@
-import 'dart:async';
+import 'dart:async' as async;
 import 'dart:convert';
 import 'dart:io' show Platform;
+import 'dart:ui' show PlatformDispatcher;
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -22,7 +23,7 @@ class Pionne {
   static Map<String, String>? _tags;
   static bool _enabled = true;
   static FlutterExceptionHandler? _previousFlutterHandler;
-  static ErrorCallback? _previousPlatformHandler;
+  static bool Function(Object, StackTrace)? _previousPlatformHandler;
 
   /// Initialise the SDK. Call this once, at the very top of `main()`,
   /// **before** `runApp(...)`. Safe to call multiple times — subsequent
@@ -132,7 +133,7 @@ class Pionne {
   ///     Pionne.runZonedGuarded(() => runApp(const MyApp()));
   ///   }
   static void runZonedGuarded(void Function() body) {
-    runZonedGuarded(body, (error, stack) {
+    async.runZonedGuarded(body, (error, stack) {
       final ev = _buildEvent(
         error,
         stack,
