@@ -1,8 +1,24 @@
+## 0.2.0
+
+Pionne backend got a major security hardening pass. The SDK API is unchanged
+but now talks to a stricter, more observable server:
+
+- **2FA TOTP** — users can now protect their dashboard account with a 6-digit
+  code from any authenticator app (Google Authenticator, 1Password, Authy…).
+- **Audit log** — every sensitive action (login, password/email change, token
+  regenerate, project delete) is recorded for 1 year and visible from the
+  mobile app.
+- **Anomaly detection** — projects whose hourly volume crosses 10× the 7-day
+  baseline trigger an email alert; 50× also auto-pauses the project for 1h
+  to neutralise leaked tokens.
+- **Server-side PII scrub** (defense-in-depth) — emails, JWTs and card numbers
+  are re-redacted on ingest even if the SDK was misconfigured.
+- **Token grace period** — when regenerating a token you can keep the old one
+  valid 24h for zero-downtime rotation.
+
 ## 0.1.2
 
-- README: add a "Get your token" section pointing to the Pionne mobile app
-  (no public web dashboard). Helps developers find where to generate their
-  `pio_live_…` token.
+- README: add a "Get your token" section pointing to the Pionne mobile app.
 
 ## 0.1.1
 
