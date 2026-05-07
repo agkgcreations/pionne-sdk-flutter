@@ -1,3 +1,13 @@
+## 0.3.0
+
+- **Release Health.** `Pionne.init()` now opens a release session (status='ok')
+  at boot and auto-flips it to 'crashed' / 'errored' if the FlutterError or
+  PlatformDispatcher handler captures a fatal/error. The dashboard derives
+  the crash-free user rate per release from these sessions.
+  - New API: `Pionne.endSession()`, `Pionne.getSessionId()`.
+  - New option: `releaseHealth: false` to disable.
+  - New endpoint: `POST /api/sessions` (idempotent on `session_id`).
+
 ## 0.2.0
 
 Pionne backend got a major security hardening pass. The SDK API is unchanged

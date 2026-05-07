@@ -6,6 +6,7 @@ import 'dart:ui' show PlatformDispatcher;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import 'sessions.dart' as sessions;
 import 'types.dart';
 
 const String _sdkName = 'pionne.flutter';
@@ -50,7 +51,26 @@ class Pionne {
 
     if (options.captureFlutterErrors) _installFlutterHandler();
     if (options.capturePlatformErrors) _installPlatformHandler();
+
+    // Release Health — open a session unless the host opted out.
+    if (options.releaseHealth) {
+      sessions.startSession(sessions.SessionContext(
+        endpoint: options.endpoint,
+        token: options.token,
+        release: options.release,
+        environment: options.environment,
+        appVersion: _staticContext['app_version'] as String?,
+        osName: _staticContext['os_name'] as String?,
+        userIdAnon: options.userIdAnon,
+      ));
+    }
   }
+
+  /// Manually end the current release session (`status='exited'`).
+  static void endSession() => sessions.endSession();
+
+  /// UUID of the current open session (for diagnostics).
+  static String? getSessionId() => sessions.getCurrentSessionId();
 
   /// Manually capture an exception. Safe to call before [init] (no-op).
   static void captureException(
@@ -141,7 +161,10 @@ class Pionne {
         MechanismType.runZonedGuarded,
         false,
       );
-      if (ev != null) _send(ev);
+      if (ev != null) {
+        _send(ev);
+        sessions.flipFromLevel(ev['level'] as String?, MechanismType.runZonedGuarded.wireValue);
+      }
     });
   }
 
@@ -281,7 +304,10 @@ class Pionne {
         MechanismType.flutterError,
         false,
       );
-      if (ev != null) _send(ev);
+      if (ev != null) {
+        _send(ev);
+        sessions.flipFromLevel(ev['level'] as String?, MechanismType.flutterError.wireValue);
+      }
       _previousFlutterHandler?.call(details);
     };
   }
@@ -296,7 +322,10 @@ class Pionne {
         MechanismType.platformError,
         false,
       );
-      if (ev != null) _send(ev);
+      if (ev != null) {
+        _send(ev);
+        sessions.flipFromLevel(ev['level'] as String?, MechanismType.platformError.wireValue);
+      }
       // Returning false lets Flutter's default handler also process the error.
       return _previousPlatformHandler?.call(error, stack) ?? false;
     };

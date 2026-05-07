@@ -38,6 +38,7 @@ class PionneOptions {
     this.tags,
     this.maxStackFrames = 50,
     this.beforeSend,
+    this.releaseHealth = true,
   });
 
   /// Project token (starts with `pio_live_`). Required.
@@ -75,6 +76,12 @@ class PionneOptions {
 
   /// Last hook before sending — return null to drop the event.
   final Map<String, dynamic>? Function(Map<String, dynamic> event)? beforeSend;
+
+  /// Release Health — opens a session at [Pionne.init] with status='ok' and
+  /// flips it to 'crashed'/'errored' if a fatal/error fires through the
+  /// global handlers. The dashboard derives crash-free user rate per
+  /// release. Default: true.
+  final bool releaseHealth;
 }
 
 /// Convenience type alias — events are just JSON-serialisable maps so the
