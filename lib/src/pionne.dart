@@ -6,6 +6,7 @@ import 'dart:ui' show PlatformDispatcher;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import 'security.dart' as security;
 import 'sessions.dart' as sessions;
 import 'types.dart';
 
@@ -25,6 +26,8 @@ class Pionne {
   static bool _enabled = true;
   static FlutterExceptionHandler? _previousFlutterHandler;
   static bool Function(Object, StackTrace)? _previousPlatformHandler;
+  static security.RateLimiter? _rateLimiter;
+  static int _droppedByRateLimit = 0;
 
   /// Initialise the SDK. Call this once, at the very top of `main()`,
   /// **before** `runApp(...)`. Safe to call multiple times — subsequent
@@ -33,15 +36,21 @@ class Pionne {
   /// Returns synchronously. Static context (OS, device) is gathered
   /// best-effort from Dart's `dart:io Platform`.
   static void init(PionneOptions options) {
-    if (!options.token.startsWith('pio_live_')) {
-      if (kDebugMode) {
-        // ignore: avoid_print
-        print(
-          '[Pionne] Missing or invalid token (must start with pio_live_).',
-        );
+    try {
+      if (!security.validateToken(options.token)) {
+        if (kDebugMode) {
+          // ignore: avoid_print
+          print('[Pionne] Missing or invalid token (expected pio_live_<≥16 chars>, no placeholders).');
+        }
+        return;
       }
-      return;
-    }
+      if (!security.validateEndpoint(options.endpoint, isDev: kDebugMode)) {
+        // ignore: avoid_print
+        print('[Pionne] Refusing non-HTTPS endpoint in production: ${options.endpoint}');
+        return;
+      }
+      final rps = options.maxEventsPerSecond;
+      _rateLimiter = rps > 0 ? security.RateLimiter(rps, rps.toDouble()) : null;
 
     _options = options;
     _userIdAnon = options.userIdAnon;
@@ -63,6 +72,11 @@ class Pionne {
         osName: _staticContext['os_name'] as String?,
         userIdAnon: options.userIdAnon,
       ));
+    }
+    } catch (e) {
+      // ignore: avoid_print
+      print('[Pionne] init failed silently — monitoring disabled. $e');
+      _options = null;
     }
   }
 
@@ -280,6 +294,14 @@ class Pionne {
   static Future<void> _send(Map<String, dynamic> event) async {
     final opts = _options;
     if (opts == null) return;
+    if (_rateLimiter != null && !_rateLimiter!.allow()) {
+      _droppedByRateLimit++;
+      if (kDebugMode && _droppedByRateLimit % 50 == 1) {
+        // ignore: avoid_print
+        print('[Pionne] rate-limit reached ($_droppedByRateLimit events dropped). Bump maxEventsPerSecond if intentional.');
+      }
+      return;
+    }
     try {
       await http.post(
         Uri.parse(opts.endpoint),

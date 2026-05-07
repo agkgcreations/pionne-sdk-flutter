@@ -39,6 +39,7 @@ class PionneOptions {
     this.maxStackFrames = 50,
     this.beforeSend,
     this.releaseHealth = true,
+    this.maxEventsPerSecond = 10,
   });
 
   /// Project token (starts with `pio_live_`). Required.
@@ -82,6 +83,11 @@ class PionneOptions {
   /// global handlers. The dashboard derives crash-free user rate per
   /// release. Default: true.
   final bool releaseHealth;
+
+  /// Token-bucket rate limit (events/sec). Default 10, set 0 to disable.
+  /// Drops silently when exceeded — protège l'app d'un runaway loop et
+  /// plafonne l'impact sur ton quota Pionne mensuel.
+  final int maxEventsPerSecond;
 }
 
 /// Convenience type alias — events are just JSON-serialisable maps so the
