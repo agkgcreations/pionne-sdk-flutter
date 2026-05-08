@@ -40,6 +40,8 @@ class PionneOptions {
     this.beforeSend,
     this.releaseHealth = true,
     this.maxEventsPerSecond = 10,
+    this.sendGeography = false,
+    this.geographyEndpoint = 'https://ipapi.co/json/',
   });
 
   /// Project token (starts with `pio_live_`). Required.
@@ -88,6 +90,16 @@ class PionneOptions {
   /// Drops silently when exceeded — protège l'app d'un runaway loop et
   /// plafonne l'impact sur ton quota Pionne mensuel.
   final int maxEventsPerSecond;
+
+  /// Opt-in: resolve approximate user geography (city, region, country) once
+  /// at startup via a free IP→location lookup, and attach it to every event
+  /// under `contexts.geo`. Off by default for privacy.
+  final bool sendGeography;
+
+  /// Override the IP→geography endpoint. Must return JSON with at least
+  /// `city`, `region`, `country` (or `country_name`), and `country_code`
+  /// fields. Default: `https://ipapi.co/json/`.
+  final String geographyEndpoint;
 }
 
 /// Convenience type alias — events are just JSON-serialisable maps so the

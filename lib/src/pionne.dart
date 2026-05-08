@@ -60,6 +60,7 @@ class Pionne {
 
     if (options.captureFlutterErrors) _installFlutterHandler();
     if (options.capturePlatformErrors) _installPlatformHandler();
+    if (options.sendGeography) _fetchGeography(options.geographyEndpoint);
 
     // Release Health — open a session unless the host opted out.
     if (options.releaseHealth) {
@@ -313,6 +314,46 @@ class Pionne {
       );
     } catch (_) {
       // Best-effort: a monitoring SDK must never crash the host app.
+    }
+  }
+
+  /// Fire-and-forget IP→geo lookup. Mutates `_staticContext['contexts']['geo']`
+  /// once it resolves so subsequent events carry the location. Failures are
+  /// silent — a monitoring SDK must never crash or stall the host app.
+  static Future<void> _fetchGeography(String endpoint) async {
+    try {
+      final res = await http
+          .get(
+            Uri.parse(endpoint),
+            headers: {'Accept': 'application/json'},
+          )
+          .timeout(const Duration(seconds: 4));
+      if (res.statusCode < 200 || res.statusCode >= 300) return;
+      final decoded = jsonDecode(res.body);
+      if (decoded is! Map<String, dynamic>) return;
+      final geo = <String, dynamic>{};
+      final city = decoded['city'];
+      if (city is String && city.isNotEmpty) geo['city'] = city;
+      final region = decoded['region'];
+      if (region is String && region.isNotEmpty) geo['region'] = region;
+      final countryName = decoded['country_name'];
+      final country = decoded['country'];
+      if (countryName is String && countryName.isNotEmpty) {
+        geo['country'] = countryName;
+      } else if (country is String && country.isNotEmpty) {
+        geo['country'] = country;
+      }
+      final cc = decoded['country_code'];
+      if (cc is String && cc.isNotEmpty) geo['country_code'] = cc;
+      if (geo.isEmpty) return;
+
+      final contexts = Map<String, dynamic>.from(
+        (_staticContext['contexts'] as Map?)?.cast<String, dynamic>() ?? {},
+      );
+      contexts['geo'] = geo;
+      _staticContext = {..._staticContext, 'contexts': contexts};
+    } catch (_) {
+      // Best-effort: silently ignore lookup failures.
     }
   }
 

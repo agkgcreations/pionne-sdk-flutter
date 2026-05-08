@@ -71,6 +71,23 @@ Pionne.setTags({'tier': 'pro'});
 Pionne.setEnabled(false);
 ```
 
+### Geography (opt-in)
+
+Approximate user location (city, region, country) attached to every event,
+just like Sentry. Off by default for privacy — flip `sendGeography` to enable:
+
+```dart
+Pionne.init(PionneOptions(
+  token: 'pio_live_xxx',
+  sendGeography: true,
+));
+```
+
+Resolved once at startup via a free IP→geo lookup (`https://ipapi.co/json/`
+by default), with a 4 s timeout. If the lookup fails the SDK silently keeps
+shipping events without geo. Override the endpoint via `geographyEndpoint`
+if you have your own.
+
 ## License
 
 MIT
