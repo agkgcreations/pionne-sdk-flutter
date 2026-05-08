@@ -4,7 +4,7 @@ description: >-
   errors and unhandled async errors, ships rich runtime context (Dart version,
   OS, device, locale), and tracks Release Health (crash-free user rate per
   release).
-version: 0.3.1
+version: 0.3.2
 homepage: https://pionne.agkgcreations.fr
 repository: https://github.com/agkgcreations/pionne-sdk-flutter
 issue_tracker: https://github.com/agkgcreations/pionne-sdk-flutter/issues

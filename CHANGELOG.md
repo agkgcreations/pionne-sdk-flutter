@@ -1,3 +1,12 @@
+## 0.3.2
+
+### Documentation
+
+- README enrichi : nouvelles sections "Release Health" et "Rate limit client"
+  (les options existaient déjà dans le code mais n'étaient pas documentées
+  dans le README). Bloc "Rate limit serveur" qui documente le cap
+  600 req/min/token côté API Pionne. Aucun changement de code SDK.
+
 ## 0.3.0
 
 - **Release Health.** `Pionne.init()` now opens a release session (status='ok')

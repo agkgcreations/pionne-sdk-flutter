@@ -88,6 +88,32 @@ by default), with a 4 s timeout. If the lookup fails the SDK silently keeps
 shipping events without geo. Override the endpoint via `geographyEndpoint`
 if you have your own.
 
+### Release Health
+
+```dart
+Pionne.init(PionneOptions(
+  token: 'pio_live_xxx',
+  releaseHealth: true, // default
+));
+```
+
+Ouvre une session au boot, la flippe à `crashed`/`errored` si une exception fatale est captée. Le dashboard dérive le crash-free user rate par release. Désactivable.
+
+### Rate limit client (anti-runaway)
+
+```dart
+Pionne.init(PionneOptions(
+  token: 'pio_live_xxx',
+  maxEventsPerSecond: 10, // default
+));
+```
+
+Token-bucket process-wide. Au-delà, les events sont droppés silencieusement. Protège contre une boucle d'erreur dans un `Timer.periodic` qui throw. Mettre à `0` désactive (déconseillé).
+
+## Rate limit serveur
+
+Indépendamment de `maxEventsPerSecond`, l'API Pionne cap **600 req/min/token** (= 10/sec) sur tous les endpoints publics (`/ingest`, `/sessions`, `/feedback`). Au-delà → `HTTP 429` avec un header `Retry-After`. Le SDK fait silencieusement échouer (try/catch interne). Empêche un token leaké de drainer ton infra ou ton quota mensuel. Voir [doc rate limits](https://pionne.agkgcreations.fr/security/rate-limits).
+
 ## License
 
 MIT
