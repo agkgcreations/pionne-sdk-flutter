@@ -135,7 +135,7 @@ Token-bucket process-wide. Au-delà, les events sont droppés silencieusement. P
 
 ## Rate limit serveur
 
-Indépendamment de `maxEventsPerSecond`, l'API Pionne cap **600 req/min/token** (= 10/sec) sur tous les endpoints publics (`/ingest`, `/sessions`, `/feedback`). Au-delà → `HTTP 429` avec un header `Retry-After`. Le SDK fait silencieusement échouer (try/catch interne). Empêche un token leaké de drainer ton infra ou ton quota mensuel. Voir [doc rate limits](https://pionne.agkgcreations.fr/security/rate-limits).
+Indépendamment de `maxEventsPerSecond`, l'API Pionne applique un rate-limit par token sur tous les endpoints publics. Au-delà → `HTTP 429` avec un header `Retry-After`. Le SDK fait silencieusement échouer (try/catch interne). Empêche un token leaké de drainer ton quota mensuel. Voir [doc rate limits](https://pionne.agkgcreations.fr/security/rate-limits).
 
 ## License
 
