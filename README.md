@@ -71,6 +71,29 @@ Pionne.setTags({'tier': 'pro'});
 Pionne.setEnabled(false);
 ```
 
+### Profiling — preview (coming soon)
+
+Continuous-ish CPU profiling is **shipped on `@pionne/react-native@0.8.0`**
+(Hermes sampler). The Dart/Flutter implementation is on the roadmap and
+will use the Dart VM Service Protocol (`dart:developer`).
+
+The API will mirror RN exactly:
+
+```dart
+// Coming in pionne_flutter ~v0.2.0
+await Pionne.profile('CheckoutFlow', () async {
+  await fetchCart();
+  await submitOrder();
+}, route: '/checkout');
+```
+
+Same backend (`POST /api/profiles`), same retention (raw 7 d, aggregates
+90 d), same flame graph view + cross-release regression chart in the
+mobile dashboard. If you want profiling **today** in Flutter, you can
+collect samples manually via `dart:developer` and POST them to the
+endpoint as collapsed-stack JSON — format documented at
+[pionne.agkgcreations.fr/profiling/intro](https://pionne.agkgcreations.fr/profiling/intro).
+
 ### Geography (opt-in)
 
 Approximate user location (city, region, country) attached to every event,
