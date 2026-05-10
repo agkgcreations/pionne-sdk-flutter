@@ -1,3 +1,17 @@
+## 0.3.3
+
+### Fixed
+
+- **Actionable error message on permanent ingest rejection.** `_send()`
+  now reads the HTTP response (previously thrown away), parses the
+  JSON error envelope on 401/403/422, distinguishes the failure modes
+  (Bundle ID mismatch / Token rejected / 422 validation), and emits a
+  `developer.log()` line (once per isolate, in release builds too)
+  that includes the `app_id` actually sent and the masked
+  `expected_format` returned by the server. Fixes the silent rejection
+  footgun where a misconfigured token or stale bundle pinning would
+  drop events without any visible signal in the Flutter console.
+
 ## 0.3.2
 
 ### Documentation

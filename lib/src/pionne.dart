@@ -1,5 +1,6 @@
 import 'dart:async' as async;
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'dart:io' show Platform;
 import 'dart:ui' show PlatformDispatcher;
 
@@ -157,6 +158,7 @@ class Pionne {
     _userIdAnon = null;
     _tags = null;
     _enabled = false;
+    _warnedPermFailure = false;
   }
 
   /// Wrap a callable so any uncaught synchronous OR asynchronous error
@@ -304,7 +306,7 @@ class Pionne {
       return;
     }
     try {
-      await http.post(
+      final res = await http.post(
         Uri.parse(opts.endpoint),
         headers: {
           'Content-Type': 'application/json',
@@ -312,10 +314,62 @@ class Pionne {
         },
         body: jsonEncode(event),
       );
+
+      // 401/403/422 = permanent config issues that retries won't fix.
+      // Surface once per process (even in release builds) via
+      // developer.log so the dev sees a misconfigured token / bundle /
+      // validation in their console without having to attach a
+      // debugger. Network errors stay silent (transient).
+      final code = res.statusCode;
+      if (!_warnedPermFailure && (code == 401 || code == 403 || code == 422)) {
+        _warnedPermFailure = true;
+        final raw = res.body;
+        Map<String, dynamic>? parsed;
+        try {
+          final decoded = jsonDecode(raw);
+          if (decoded is Map<String, dynamic>) parsed = decoded;
+        } catch (_) {
+          // not JSON
+        }
+        final sentAppId = (event['app_id'] is String) ? event['app_id'] as String : '<unset>';
+        final serverMsg = (parsed?['message'] is String)
+            ? parsed!['message'] as String
+            : raw.length > 200 ? raw.substring(0, 200) : raw;
+        final expectedFormat = (parsed?['expected_format'] is String)
+            ? parsed!['expected_format'] as String
+            : 'unknown';
+
+        String msg;
+        if (code == 403 && RegExp(r'bundle\s*id', caseSensitive: false).hasMatch(serverMsg)) {
+          msg =
+              '[Pionne] Bundle ID mismatch — your project rejects events from app_id="$sentAppId". '
+              'Server expected "$expectedFormat" (1st char masked for safety). '
+              'Fix it in your Pionne project Settings → Bundle ID, or clear the field to disable the check. '
+              'Subsequent rejections will be silent for this session.';
+        } else if (code == 401) {
+          msg =
+              '[Pionne] Token rejected (401). Check that your project token (starts with "pio_live_…") matches. '
+              'Server said: $serverMsg. Subsequent rejections will be silent for this session.';
+        } else if (code == 422) {
+          msg =
+              '[Pionne] Event rejected (422 validation): $serverMsg. '
+              'Sent app_id="$sentAppId". Subsequent rejections will be silent for this session.';
+        } else {
+          msg =
+              '[Pionne] Event rejected (status=$code): $serverMsg. '
+              'Sent app_id="$sentAppId". Subsequent rejections will be silent for this session.';
+        }
+        developer.log(msg, name: 'Pionne');
+      }
     } catch (_) {
       // Best-effort: a monitoring SDK must never crash the host app.
     }
   }
+
+  /// Module-level flag — gates the permanent-failure warning to one
+  /// log per Dart isolate. Reset on `Pionne.uninstall()` so a re-init
+  /// can re-warn if needed.
+  static bool _warnedPermFailure = false;
 
   /// Fire-and-forget IP→geo lookup. Mutates `_staticContext['contexts']['geo']`
   /// once it resolves so subsequent events carry the location. Failures are
