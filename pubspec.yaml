@@ -12,7 +12,6 @@ topics:
   - error-monitoring
   - crash-reporting
   - observability
-  - sentry-alternative
   - pionne
 
 environment:

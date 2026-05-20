@@ -96,8 +96,8 @@ endpoint as collapsed-stack JSON — format documented at
 
 ### Geography (opt-in)
 
-Approximate user location (city, region, country) attached to every event,
-just like Sentry. Off by default for privacy — flip `sendGeography` to enable:
+Approximate user location (city, region, country) attached to every event.
+Off by default for privacy — flip `sendGeography` to enable:
 
 ```dart
 Pionne.init(PionneOptions(
