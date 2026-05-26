@@ -1,0 +1,50 @@
+group 'fr.pionne.flutter'
+version '0.4.0'
+
+buildscript {
+    ext.kotlin_version = '1.9.10'
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:7.4.2'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+rootProject.allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+
+android {
+    // AGP 7+ requires namespace in build.gradle (replaces manifest package="…").
+    // Guarded so this same file still builds against older AGP that doesn't know
+    // the property.
+    if (project.android.hasProperty("namespace")) {
+        namespace 'fr.pionne.flutter'
+    }
+    compileSdk 34
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
+
+    defaultConfig {
+        // ApplicationExitInfo is API 30 (Android 11); the Kotlin gates on it at
+        // runtime so the plugin installs fine on older minSdk hosts.
+        minSdkVersion 21
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}

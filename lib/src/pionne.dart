@@ -7,12 +7,13 @@ import 'dart:ui' show PlatformDispatcher;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import 'native_crash.dart';
 import 'security.dart' as security;
 import 'sessions.dart' as sessions;
 import 'types.dart';
 
 const String _sdkName = 'pionne.flutter';
-const String _sdkVersion = '0.1.0';
+const String _sdkVersion = '0.4.0';
 
 /// Pionne SDK entrypoint. Stateless namespace — call [Pionne.init] once at
 /// app boot, then use [Pionne.captureException] / [Pionne.captureMessage]
@@ -62,6 +63,16 @@ class Pionne {
     if (options.captureFlutterErrors) _installFlutterHandler();
     if (options.capturePlatformErrors) _installPlatformHandler();
     if (options.sendGeography) _fetchGeography(options.geographyEndpoint);
+
+    // Native crashes from previous run(s) (MetricKit / ApplicationExitInfo).
+    // Silently no-ops on web or when the native plugin isn't linked.
+    if (options.captureNativeCrashes) {
+      _replayNativeCrashes();
+      // MetricKit delivers ~a few seconds after the launch that follows the
+      // crash, so a second pass catches a payload surfaced during *this*
+      // session. The native side clears on read → no double-report.
+      Future.delayed(const Duration(seconds: 5), _replayNativeCrashes);
+    }
 
     // Release Health — open a session unless the host opted out.
     if (options.releaseHealth) {
@@ -446,5 +457,50 @@ class Pionne {
       // Returning false lets Flutter's default handler also process the error.
       return _previousPlatformHandler?.call(error, stack) ?? false;
     };
+  }
+
+  /// Drain the native crashes the OS recorded on previous run(s) and replay each
+  /// as a `fatal` event. These come from a *past* process, so we use plain
+  /// [_send] — never [sessions.flipFromLevel], which would wrongly mark the
+  /// *current* session as crashed.
+  static Future<void> _replayNativeCrashes() async {
+    final opts = _options;
+    if (opts == null || !_enabled) return;
+    final records = await getPendingNativeCrashes();
+    if (records.isEmpty) return;
+    final defaultEnv = kDebugMode ? 'debug' : 'production';
+    for (final r in records) {
+      final mergedTags = <String, String>{
+        if (_tags != null) ..._tags!,
+        'native.source': r.platform == 'ios' ? 'metrickit' : 'app_exit',
+        'native.crashed_at': DateTime.fromMillisecondsSinceEpoch(
+          r.timestamp,
+          isUtc: true,
+        ).toIso8601String(),
+      };
+      final event = <String, dynamic>{
+        ..._staticContext,
+        'exception_type': r.type,
+        'message': r.message,
+        if (r.stack.isNotEmpty) 'stack': r.stack,
+        'level': Level.fatal.wireValue,
+        if (opts.release != null) 'release': opts.release,
+        'environment': opts.environment ?? defaultEnv,
+        if (r.appVersion != null) 'app_version': r.appVersion,
+        if (r.osVersion != null) 'os_version': r.osVersion,
+        if (_userIdAnon != null) 'user_id_anon': _userIdAnon,
+        if (mergedTags.isNotEmpty) 'tags': mergedTags,
+        'mechanism': {
+          'type': MechanismType.native.wireValue,
+          'handled': false,
+        },
+      };
+      final hook = opts.beforeSend;
+      final out = hook != null ? hook(event) : event;
+      if (out != null) {
+        // ignore: unawaited_futures
+        _send(out);
+      }
+    }
   }
 }

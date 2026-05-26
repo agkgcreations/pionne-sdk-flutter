@@ -1,3 +1,35 @@
+## 0.4.0
+
+### Added
+
+- **Native crash capture** via MetricKit (iOS 14+) and `ApplicationExitInfo`
+  (Android 11+). The Dart isolate can't see a crash that takes down the whole
+  process (Objective-C `NSException`, signals like `SIGSEGV`/`SIGABRT`, OOM,
+  NDK crashes, ANRs), so the OS records them and `pionne_flutter` replays them
+  as `fatal` events (`mechanism.type=native`) on the next launch — tagged
+  `native.source` (`metrickit` on iOS, `app_exit` on Android).
+- New option `captureNativeCrashes` (defaults to `true`).
+- New `MechanismType.native`.
+
+### Changed
+
+- Package converted from a pure Dart package to a **Flutter Plugin**. It now
+  ships native iOS (Swift / MetricKit) and Android (Kotlin / ApplicationExitInfo)
+  code. Consumers need to rebuild their app after upgrading (`flutter clean
+  && flutter pub get && flutter run`) so the plugin is linked.
+- Aligned `_sdkVersion` (reported in `contexts.sdk.version`) with the package
+  version — it had been stuck at `0.1.0`.
+
+### Notes
+
+- iOS deployment target floor stays at 12 — MetricKit calls are gated by
+  `@available(iOS 14.0, *)`, so older targets install the plugin without
+  activating crash capture.
+- Android crash capture only fires on API 30+; on older devices the plugin
+  silently returns no records.
+- App-level native frames aren't symbolicated (no dSYM pipeline) — system
+  frames carry symbol info supplied by the OS.
+
 ## 0.3.3
 
 ### Fixed

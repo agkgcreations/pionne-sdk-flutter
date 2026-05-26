@@ -2,7 +2,7 @@
 
 Error monitoring SDK for Flutter — by [Pionne](https://pionne.agkgcreations.fr).
 
-Auto-captures Flutter framework errors and unhandled async/zone errors, ships rich runtime context (Dart version, OS, locale, debug/release mode). Single dependency: `http`. Wire-format compatible with `@pionne/react-native`, `@pionne/web`, `@pionne/node`.
+Auto-captures Flutter framework errors, unhandled async/zone errors, **AND native crashes** (Objective-C `NSException`, signals, OOM, NDK, ANR) via MetricKit (iOS 14+) and `ApplicationExitInfo` (Android 11+). Ships rich runtime context (Dart version, OS, locale, debug/release mode). Wire-format compatible with `@pionne/react-native`, `@pionne/web`, `@pionne/node`.
 
 ## 🎫 Get your token
 
@@ -21,12 +21,14 @@ Pionne is **mobile-first**: you sign up, create projects, and watch your error f
 
 ```yaml
 dependencies:
-  pionne_flutter: ^0.1.0
+  pionne_flutter: ^0.4.0
 ```
 
 ```bash
 flutter pub get
 ```
+
+> ℹ️ Depuis **0.4.0** le package est un **Flutter Plugin** (avec code natif iOS + Android pour la capture des crashs natifs). À l'upgrade depuis 0.3.x, lance `flutter clean && flutter pub get` puis rebuild l'app (`flutter run` / `flutter build`) pour que le module natif soit lié.
 
 ## Usage
 
@@ -62,6 +64,31 @@ try {
 
 Pionne.captureMessage('user reached empty state', level: Level.info);
 ```
+
+### Crashs natifs (iOS + Android)
+
+Les handlers Dart (`FlutterError.onError`, `PlatformDispatcher.onError`, `runZonedGuarded`) ne voient **jamais** un crash natif : le process entier meurt avant qu'aucun Dart ne tourne. Le SDK s'appuie sur l'OS pour les enregistrer et les rejoue en events `fatal` (`mechanism.type = "native"`) **au lancement suivant**.
+
+```dart
+Pionne.init(PionneOptions(
+  token: 'pio_live_xxx',
+  captureNativeCrashes: true, // défaut: true
+));
+```
+
+**Ce qui est capturé sur iOS 14+** via MetricKit :
+- `NSException` Obj-C/Swift (nom + message structuré sur iOS 17+, ex. `NSInvalidArgumentException`)
+- Signaux : `SIGSEGV`, `SIGABRT`, `SIGBUS`, `SIGILL`, `SIGFPE`, `SIGTRAP`
+- Kills mémoire (OOM) et terminations watchdog (`0x8badf00d`)
+- Call stack tree (frames système symbolisées, frames app en `binaryName 0xADDR`)
+
+**Ce qui est capturé sur Android 11+** via `ApplicationExitInfo` :
+- `REASON_CRASH` — exception JVM non catchée
+- `REASON_CRASH_NATIVE` — crash NDK (C/C++)
+- `REASON_ANR` — Application Not Responding (avec trace)
+- `REASON_LOW_MEMORY` — kill mémoire
+
+> ⚠️ La capture native nécessite que le plugin soit **compilé dans le binaire** (plugin Flutter avec code natif iOS/Android). Sur le **web** ou un build sans le module natif, l'option est silencieusement ignorée (aucun crash). Les crashs arrivent **au lancement qui suit** (livrés post-mortem par l'OS), avec un tag `native.source` (`metrickit` sur iOS, `app_exit` sur Android).
 
 ### User identity, tags, opt-out
 

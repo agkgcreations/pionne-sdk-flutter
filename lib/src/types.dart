@@ -12,7 +12,18 @@ extension LevelString on Level {
 
 /// How the event was captured. Used by the dashboard to group manual reports
 /// vs auto-captured crashes.
-enum MechanismType { flutterError, platformError, runZonedGuarded, manual }
+enum MechanismType {
+  flutterError,
+  platformError,
+  runZonedGuarded,
+  manual,
+
+  /// Native crash (Objective-C/Swift `NSException`, signal, OOM, NDK, ANR…)
+  /// captured by the OS and replayed on the next launch via MetricKit (iOS) /
+  /// ApplicationExitInfo (Android). The Dart isolate never sees the original
+  /// crash — the process was already dead.
+  native,
+}
 
 extension MechanismTypeString on MechanismType {
   String get wireValue => switch (this) {
@@ -20,6 +31,7 @@ extension MechanismTypeString on MechanismType {
         MechanismType.platformError => 'platform_error',
         MechanismType.runZonedGuarded => 'run_zoned_guarded',
         MechanismType.manual => 'manual',
+        MechanismType.native => 'native',
       };
 }
 
@@ -33,6 +45,7 @@ class PionneOptions {
     this.enabled = true,
     this.captureFlutterErrors = true,
     this.capturePlatformErrors = true,
+    this.captureNativeCrashes = true,
     this.autoContext = true,
     this.userIdAnon,
     this.tags,
@@ -64,6 +77,17 @@ class PionneOptions {
 
   /// Auto-capture errors via [PlatformDispatcher.instance.onError]. Default: true.
   final bool capturePlatformErrors;
+
+  /// Capture **native** crashes (Objective-C/Swift exceptions, signals like
+  /// `SIGSEGV`/`SIGABRT`, OOM kills, ANRs, NDK crashes) that take down the
+  /// whole process before any Dart can run. The OS records them — MetricKit
+  /// on iOS 14+, `ApplicationExitInfo` on Android 11+ — and the SDK replays
+  /// them as `fatal` events on the **next launch**.
+  ///
+  /// Requires a real device build (the native plugin must be compiled in).
+  /// Silently no-ops if the native side is missing or platform unsupported.
+  /// Default: true.
+  final bool captureNativeCrashes;
 
   /// Auto-detect OS / device / locale context. Default: true.
   final bool autoContext;
