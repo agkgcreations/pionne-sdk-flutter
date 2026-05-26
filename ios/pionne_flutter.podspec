@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'pionne_flutter'
-  s.version          = '0.4.0'
+  s.version          = '0.4.1'
   s.summary          = 'Native crash capture (MetricKit) for the Pionne Flutter SDK.'
   s.description      = <<-DESC
     Subscribes to MetricKit and surfaces native iOS crashes (NSException, signals,

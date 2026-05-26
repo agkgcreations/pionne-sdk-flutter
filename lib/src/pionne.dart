@@ -13,7 +13,7 @@ import 'sessions.dart' as sessions;
 import 'types.dart';
 
 const String _sdkName = 'pionne.flutter';
-const String _sdkVersion = '0.4.0';
+const String _sdkVersion = '0.4.1';
 
 /// Pionne SDK entrypoint. Stateless namespace — call [Pionne.init] once at
 /// app boot, then use [Pionne.captureException] / [Pionne.captureMessage]

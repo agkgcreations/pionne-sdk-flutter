@@ -1,3 +1,11 @@
+## 0.4.1
+
+### Changed
+
+- README fully translated to English (some 0.4.0 sections — native crashes,
+  Release Health, rate-limit notes — slipped through with French copy). No
+  API or behaviour changes from 0.4.0.
+
 ## 0.4.0
 
 ### Added
