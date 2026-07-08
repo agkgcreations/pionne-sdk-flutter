@@ -1,3 +1,10 @@
+## 0.4.2
+
+### Changed
+
+- README: link the web dashboard (https://app.pionne.agkgcreations.fr) in
+  "Get your token". No API or behaviour changes.
+
 ## 0.4.1
 
 ### Changed
